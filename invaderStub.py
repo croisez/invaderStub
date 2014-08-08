@@ -394,6 +394,7 @@ def DoAnimationAll():
 		for i in range(LengthOfEachDemo):
 			DoAnimationCircle()
 
-clear()
-DoAnimationAll()
+if __name__ == "__main__":
+	clear()
+	DoAnimationAll()
 
