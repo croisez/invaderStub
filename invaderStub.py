@@ -120,6 +120,7 @@ def sendFrame(buf):
 		s.write(buf)
 
 #Conversion of a 24 bit (3x1 byte) color to a 15 bit (2bytes) color
+#Beware that each input rgb color components must already be shrinked to 5bit, meaning values from 0 to 31 only.
 def convert24To15Bit(r,g,b):
 	# BBBBBBBB BBBBBBBB
 	# 11111111 22222222
@@ -137,27 +138,28 @@ def is_pcoord_valid(x, y):
 	return 0
 	
 #Plan transformation. p(x,y) => q(x,y). Note that this is q(x,y) which is latched to the panels
-def transformPanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
+def transformPanel(panel, transform, vx=0, vy=0):
 	# Note: descriptions des transformations:
 	# flippedy: x <= x  , y <= 7-y
 	# flippedx: x <= 7-x, y <= y
-	# virtplan_offset_x & virtplan_offset_y allows to displace the viewport inside the virtualplan p(x,y),
-	#   which is useful for scrolling in a picture map for example.
+	# vx & vy allows to displace the viewport inside the virtualplan p(x,y),
+	#   which is useful for scrolling in a big picture map, for example.
 	###############################################################
 
 	if (transform == NO_ROTATE):
 		#retourner lignes impaires
 		for x in range(0, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_x + x + panel*8, virtplan_offset_y + y):
-					q[x + panel*8][y] = p[virtplan_offset_x + x + panel*8][virtplan_offset_y + y]
+
+				if is_pcoord_valid(vx+x+panel*8, vy+y):
+					q[x + panel*8][y] = p[vx+x+panel*8][vy+y]
 				else:
 					q[x + panel*8][y] = 0
 					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_x + x + panel*8, virtplan_offset_y + 7-y):
-					q[x + panel*8][y] = p[virtplan_offset_x + x + panel*8][virtplan_offset_y + 7-y]
+				if is_pcoord_valid(vx+x+panel*8,vy+7-y):
+					q[x + panel*8][y] = p[vx+x+panel*8][vy+7-y]
 				else:
 					q[x + panel*8][y] = 0
 					
@@ -174,15 +176,15 @@ def transformPanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 	if (transform == ROTATE_180_FLIPPEDY):
 		for x in range(0, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_y + 7-y + panel*8, virtplan_offset_x + 7-x):
-					q[x + panel*8][y] = p[virtplan_offset_y + 7-y + panel*8][virtplan_offset_x + 7-x]
+				if is_pcoord_valid(vx+7-y+panel*8, vy+7-x):
+					q[x + panel*8][y] = p[vx+7-y+panel*8][vy+7-x]
 				else:
 					q[x + panel*8][y] = 0
 					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_y + y + panel*8, virtplan_offset_x + 7-x):
-					q[x + panel*8][y] = p[virtplan_offset_y + y + panel*8][virtplan_offset_x + 7-x]
+				if is_pcoord_valid(vx+y+panel*8, vy+7-x):
+					q[x + panel*8][y] = p[vx+y+panel*8][vy+7-x]
 				else:
 					q[x + panel*8][y] = 0
 					
@@ -191,15 +193,15 @@ def transformPanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 		#retourner lignes impaires et symetrie sur la diagonale
 		for x in range(0, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_y + y + panel*8, virtplan_offset_x + x):
-					q[x + panel*8][y] = p[virtplan_offset_y + y + panel*8][virtplan_offset_x + x]
+				if is_pcoord_valid(vx+y+panel*8, vy+x):
+					q[x + panel*8][y] = p[vx+y+panel*8][vy+x]
 				else:
 					q[x + panel*8][y] = 0
 					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				if is_pcoord_valid(virtplan_offset_y + 7-y + panel*8, virtplan_offset_x + x):
-					q[x + panel*8][y] = p[virtplan_offset_y + 7-y + panel*8][virtplan_offset_x + x]
+				if is_pcoord_valid(vx+7-y+panel*8, vy+x):
+					q[x + panel*8][y] = p[vx+7-y+panel*8][vy+x]
 				else:
 					q[x + panel*8][y] = 0
 					
@@ -280,14 +282,22 @@ def Sprite(x,y,data, r,g,b):
 		for j in range(4):
 			c = convert24To15Bit(r,g,b)
 			if bindata[j] == '0':
-				#c = convert24To15Bit(0,0,0)
-				c = p[x][y]
+				c = p[x][y] #if nothing is displayed, we leave the former content of the pixel
 			if x >= 0 and x < 8*NUM_PANEL*VIRTPLAN_MULT_SIZE and y >= 0 and y < 8*VIRTPLAN_MULT_SIZE:
 				p[x][y] = c
 			x = x + 1
 		y = y + 1
 		x = x0
 
+#Function that displays a text, which bottom-left coordinates are (x,y), with (rgb) as color.
+#w is the spacing between each letters, which is equal to 4 by default.
+#Beware that there is no check for the existence of an entry in the dictionnary.
+def Text(x, y, buf, r, g, b, w=4):
+	x0 = x
+	for i in range(len(buf)):
+		Sprite(x0,y, dico[buf[i]], r, g, b)
+		x0 = x0 + w
+		
 def DoAnimationRandPanels():
 	r = random.randint(0,31)
 	g = random.randint(0,31)
@@ -414,35 +424,17 @@ def DoAnimationSprite(scroll):
 def DoAnimationVirtualPlan():
 	clear()
 	#Put some text in the virtualplan
-	Sprite(1,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(4,2,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(7,2,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(9,2,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(11,2, dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-
-	Sprite(21,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(24,2,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(27,2,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(29,2,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(31,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	
-	Sprite(1,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(4,12,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(7,12,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(9,12,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(11,12, dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	
-	Sprite(21,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(24,12,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(27,12,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(29,12,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
-	Sprite(31,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Text(1,2,   "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
+	Text(21,2,  "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
+	Text(1,12,  "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
+	Text(21,12, "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
 	
 	doIt = 200
 	posx = 0; posy = 0; incx = 1; incy = 1;
 	while (doIt):
 		posx = posx + incx
 		posy = posy + incy
+		
 		if posx < 0 or posx > width(p) - 8*NUM_PANEL:
 			incx = -incx
 			posx = posx + incx
