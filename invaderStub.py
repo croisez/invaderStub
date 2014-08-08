@@ -282,7 +282,7 @@ def Sprite(x,y,data, r,g,b):
 			if bindata[j] == '0':
 				#c = convert24To15Bit(0,0,0)
 				c = p[x][y]
-			if x >= 0 and x < 8*NUM_PANEL and y >= 0 and y < 8:
+			if x >= 0 and x < 8*NUM_PANEL*VIRTPLAN_MULT_SIZE and y >= 0 and y < 8*VIRTPLAN_MULT_SIZE:
 				p[x][y] = c
 			x = x + 1
 		y = y + 1
@@ -412,26 +412,42 @@ def DoAnimationSprite(scroll):
 	sleep(0.1)
 
 def DoAnimationVirtualPlan():
-	#First fill the virtual plan with some circles
-	for x in range(50):
-		x = random.randint(0,width(p))
-		y = random.randint(0,height(p))
-		radius = random.randint(1,6)
-		r = random.randint(0,31)
-		g = random.randint(0,31)
-		b = random.randint(0,31)
-		Circle( x,y,radius, r,g,b, width(p),height(p) )
+	clear()
+	#Put some text in the virtualplan
+	Sprite(1,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(4,2,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(7,2,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(9,2,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(11,2, dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+
+	Sprite(21,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(24,2,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(27,2,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(29,2,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(31,2,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
 	
-	doIt = 100
-	posx = 10; posy = 10; incx = 2; incy = 1;
+	Sprite(1,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(4,12,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(7,12,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(9,12,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(11,12, dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	
+	Sprite(21,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(24,12,  dico['E'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(27,12,  dico['T'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(29,12,  dico['I'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	Sprite(31,12,  dico['C'], random.randint(0,31),random.randint(0,31),random.randint(0,31))
+	
+	doIt = 200
+	posx = 0; posy = 0; incx = 1; incy = 1;
 	while (doIt):
 		posx = posx + incx
 		posy = posy + incy
-		if posx < 8 or posx > width(p) - 8*NUM_PANEL:
+		if posx < 0 or posx > width(p) - 8*NUM_PANEL:
 			incx = -incx
 			posx = posx + incx
 			
-		if posy < 8 or posy > height(p) - 8:
+		if posy < 0 or posy > height(p) - 8:
 			incy = -incy
 			poxy = posy + incy
 			
