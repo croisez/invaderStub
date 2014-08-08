@@ -431,7 +431,7 @@ def DoAnimationVirtualPlan():
 			incx = -incx
 			posx = posx + incx
 			
-		if posy < 8 or posy > height(p) - 8-8-8-8-8:
+		if posy < 8 or posy > height(p) - 8:
 			incy = -incy
 			poxy = posy + incy
 			
