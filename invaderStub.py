@@ -28,13 +28,14 @@
 #  ScrollPanelsRight
 #  ScrollPanelsUp
 #  ScrollPanelsDown
-#  Circle(xc,yc,radius,r,g,b)
+#  Circle(xc,yc,radius,r,g,b,[max_x],[max_y])
 #  Sprite(x,y,data,r,g,b)
 #
 #  For the sprite, a dictionnary has been initiated, containing a big part of the alphabet.
 
 
 ########## USER DEFS ########## USER DEFS ########### USER DEFS ##### USER DEFS ###############
+NUM_PANEL = 2
 USE_TCPIP = 1
 #Needed if using TCPIP comm
 TCP_IP = "192.168.99.187"
@@ -73,8 +74,7 @@ ROTATE_180 = 3
 ROTATE_180_FLIPPEDY = 4
 ROTATE_180_FLIPPEDX = 5
 ROTATE_270 = 6
-
-NUM_PANEL = 2
+	
 
 if (USE_TCPIP):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -89,18 +89,27 @@ else:
 	)
 
 #Array creation
-p = [[] for _ in range(8*NUM_PANEL)]
-for x in range(8*NUM_PANEL):
-	for y in range(8):
+VIRTPLAN_MULT_SIZE = 3
+p = [[] for _ in range(8*NUM_PANEL*VIRTPLAN_MULT_SIZE)]
+for x in range(8*NUM_PANEL*VIRTPLAN_MULT_SIZE):
+	for y in range(8*VIRTPLAN_MULT_SIZE):
 		p[x].append(0)
 q = [[] for _ in range(8*NUM_PANEL)]
 for x in range(8*NUM_PANEL):
 	for y in range(8):
 		q[x].append(0)
-			
+
+#Returns the height of a plan (either p or q, for example)
+def height(o):
+	return len(o[0])
+	
+#Returns the width of a plan (either p or q, for example)
+def width(o):
+	return len(o)
+	
 def clear():
-	for x in range(8*NUM_PANEL):
-		for y in range(8):
+	for x in range(width(p)):
+		for y in range(height(p)):
 			p[x][y]=0
 	UpdatePanels()
 
@@ -120,21 +129,38 @@ def convert24To15Bit(r,g,b):
 	B2=((g&~0b11000)<<5) + r
 	return B1*256 + B2
 
+#Validate if given coordinates is inside the virtualplan
+def is_pcoord_valid(x, y):
+	if x < width(p) and x >= 0 and y < height(p) and y >= 0:
+		return 1
+	#print(x,y)
+	return 0
+	
 #Plan transformation. p(x,y) => q(x,y). Note that this is q(x,y) which is latched to the panels
-def transformPanel(panel, transform):
+def transformPanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 	# Note: descriptions des transformations:
 	# flippedy: x <= x  , y <= 7-y
 	# flippedx: x <= 7-x, y <= y
-	# 
+	# virtplan_offset_x & virtplan_offset_y allows to displace the viewport inside the virtualplan p(x,y),
+	#   which is useful for scrolling in a picture map for example.
 	###############################################################
+
 	if (transform == NO_ROTATE):
 		#retourner lignes impaires
 		for x in range(0, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[x + panel*8][y]
+				if is_pcoord_valid(virtplan_offset_x + x + panel*8, virtplan_offset_y + y):
+					q[x + panel*8][y] = p[virtplan_offset_x + x + panel*8][virtplan_offset_y + y]
+				else:
+					q[x + panel*8][y] = 0
+					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[x + panel*8][7-y]
+				if is_pcoord_valid(virtplan_offset_x + x + panel*8, virtplan_offset_y + 7-y):
+					q[x + panel*8][y] = p[virtplan_offset_x + x + panel*8][virtplan_offset_y + 7-y]
+				else:
+					q[x + panel*8][y] = 0
+					
 	###############################################################
 	if (transform == ROTATE_90):
 		pass
@@ -148,26 +174,44 @@ def transformPanel(panel, transform):
 	if (transform == ROTATE_180_FLIPPEDY):
 		for x in range(0, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[7-y + panel*8][7-x]
+				if is_pcoord_valid(virtplan_offset_y + 7-y + panel*8, virtplan_offset_x + 7-x):
+					q[x + panel*8][y] = p[virtplan_offset_y + 7-y + panel*8][virtplan_offset_x + 7-x]
+				else:
+					q[x + panel*8][y] = 0
+					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[y + panel*8][7-x]
+				if is_pcoord_valid(virtplan_offset_y + y + panel*8, virtplan_offset_x + 7-x):
+					q[x + panel*8][y] = p[virtplan_offset_y + y + panel*8][virtplan_offset_x + 7-x]
+				else:
+					q[x + panel*8][y] = 0
+					
 	###############################################################	
 	if (transform == ROTATE_180_FLIPPEDX):
 		#retourner lignes impaires et symetrie sur la diagonale
 		for x in range(0, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[y + panel*8][x]
+				if is_pcoord_valid(virtplan_offset_y + y + panel*8, virtplan_offset_x + x):
+					q[x + panel*8][y] = p[virtplan_offset_y + y + panel*8][virtplan_offset_x + x]
+				else:
+					q[x + panel*8][y] = 0
+					
 		for x in range(1, 8, 2):
 			for y in range(8):
-				q[x + panel*8][y] = p[7 - y + panel*8][x]
+				if is_pcoord_valid(virtplan_offset_y + 7-y + panel*8, virtplan_offset_x + x):
+					q[x + panel*8][y] = p[virtplan_offset_y + 7-y + panel*8][virtplan_offset_x + x]
+				else:
+					q[x + panel*8][y] = 0
+					
 	###############################################################			
 	if (transform == ROTATE_270):
 		pass
 	###############################################################
 
+	
+	
 #A panel update.
-def UpdatePanel(panel, transform):
+def UpdatePanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 	frame = bytearray()
 	frame.append(TPM2NET_HEADER_IDENT)
 	frame.append(TPM2NET_CMD_DATAFRAME)
@@ -176,7 +220,7 @@ def UpdatePanel(panel, transform):
 	frame.append(panel)
 	frame.append(1)
 	
-	transformPanel(panel, transform)
+	transformPanel(panel, transform, virtplan_offset_x, virtplan_offset_y)
 	
 	for x in range(panel*8, panel*8 + 8):
 		for y in range(8):
@@ -189,10 +233,10 @@ def UpdatePanel(panel, transform):
 	sendFrame(frame)
 
 #Update of all panels
-def UpdatePanels():
-	UpdatePanel(0,ROTATE_180_FLIPPEDY)
+def UpdatePanels(virtplan_offset_x=0, virtplan_offset_y=0):
+	UpdatePanel(0,ROTATE_180_FLIPPEDY, virtplan_offset_x, virtplan_offset_y)
 	sleep(0.006) #delay needed for the Teensy Arduino board to digest the received information
-	UpdatePanel(1,ROTATE_180_FLIPPEDX)
+	UpdatePanel(1,ROTATE_180_FLIPPEDX, virtplan_offset_x, virtplan_offset_y)
 	sleep(0.006)
 	
 def ScrollPanelsLeft():
@@ -219,13 +263,13 @@ def ScrollPanelsDown():
 		for x in range(8*NUM_PANEL):
 			p[x][y-1]=p[x][y]
 
-def Circle(xc,yc,radius, r, g, b):
+def Circle(xc,yc,radius, r, g, b, max_x=8*NUM_PANEL, max_y=8):
 	k = 0
 	while (k <= 2*math.pi):
 		k = k + .1
 		x = math.floor(math.sin(k) * radius + xc)
 		y = math.floor(math.cos(k) * radius + yc)
-		if x >= 0 and x < 8*NUM_PANEL and y >= 0 and y < 8:
+		if x >= 0 and x < max_x and y >= 0 and y < max_y:
 			p[x][y] = convert24To15Bit(r,g,b)
 
 def Sprite(x,y,data, r,g,b):
@@ -367,9 +411,40 @@ def DoAnimationSprite(scroll):
 			sleep(0.1)
 	sleep(0.1)
 
+def DoAnimationVirtualPlan():
+	#First fill the virtual plan with some circles
+	for x in range(50):
+		x = random.randint(0,width(p))
+		y = random.randint(0,height(p))
+		radius = random.randint(1,6)
+		r = random.randint(0,31)
+		g = random.randint(0,31)
+		b = random.randint(0,31)
+		Circle( x,y,radius, r,g,b, width(p),height(p) )
+	
+	doIt = 100
+	posx = 10; posy = 10; incx = 2; incy = 1;
+	while (doIt):
+		posx = posx + incx
+		posy = posy + incy
+		if posx < 8 or posx > width(p) - 8*NUM_PANEL:
+			incx = -incx
+			posx = posx + incx
+			
+		if posy < 8 or posy > height(p) - 8-8-8-8-8:
+			incy = -incy
+			poxy = posy + incy
+			
+		UpdatePanels(posx, posy); sleep(0.2)
+		doIt = doIt - 1
+
+	
 def DoAnimationAll():
 	LengthOfEachDemo = 30
 	while True:
+		for i in range(LengthOfEachDemo):
+			clear()
+			DoAnimationVirtualPlan()
 		for i in range(LengthOfEachDemo):
 			DoAnimationSprite("Left")
 			DoAnimationSprite("Right")
