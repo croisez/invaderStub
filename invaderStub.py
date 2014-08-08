@@ -50,7 +50,8 @@ dico = { # 4x6 matrix sprite dictionnary
  'O': 'EAAAE0', 'P': '88EAE0', 'Q': '3EAAE0', 'R': 'AACAE0', 'S': 'C24860', 'T': '4444E0', 'U': 'EAAAA0', 
  'V': '4AAAA0', 'W': 'AEAAA0', 'X': 'AA4AA0', 'Y': '44AAA0', 'Z': 'E842E0', 
  '0': '4AAA40', '1': '444C40', '2': 'F42A40', '3': '', '4': '', 
- '5': '', '6': '', '7': '', '8': 'EA4AE0', '9': 'E2EAE0'
+ '5': '', '6': '', '7': '', '8': 'EA4AE0', '9': 'E2EAE0',
+ ' ': '000000'
 }
 
 import socket
@@ -282,9 +283,13 @@ def Sprite(x,y,data, r,g,b):
 		for j in range(4):
 			c = convert24To15Bit(r,g,b)
 			if bindata[j] == '0':
-				c = p[x][y] #if nothing is displayed, we leave the former content of the pixel
-			if x >= 0 and x < 8*NUM_PANEL*VIRTPLAN_MULT_SIZE and y >= 0 and y < 8*VIRTPLAN_MULT_SIZE:
-				p[x][y] = c
+				if is_pcoord_valid(x,y):
+					c = p[x][y] #if nothing is displayed, we leave the former content of the pixel
+				else:
+					c = 0
+			if x >= 0 and x < width(p) and y >= 0 and y < height(p):
+				if is_pcoord_valid(x,y):
+					p[x][y] = c
 			x = x + 1
 		y = y + 1
 		x = x0
@@ -425,9 +430,9 @@ def DoAnimationVirtualPlan():
 	clear()
 	#Put some text in the virtualplan
 	Text(1,2,   "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
-	Text(21,2,  "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
+	Text(21,2,  "ECS LAB", random.randint(0,31),random.randint(0,31),random.randint(0,31), 4)
 	Text(1,12,  "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
-	Text(21,12, "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
+	Text(21,12, "SST LAB", random.randint(0,31),random.randint(0,31),random.randint(0,31), 4)
 	
 	doIt = 200
 	posx = 0; posy = 0; incx = 1; incy = 1;
