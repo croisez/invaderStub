@@ -42,30 +42,18 @@ from time import sleep
 import random
 import math
 from PIL import Image
+import config
 
-NO_ROTATE = 0; ROTATE_90 = 1; ROTATE_90_FLIPPEDY = 2; ROTATE_180 = 3; ROTATE_180_FLIPPEDY = 4; ROTATE_180_FLIPPEDX = 5; ROTATE_270 = 6
-
-########## USER DEFS ########## USER DEFS ########### USER DEFS ##### USER DEFS ###############
-NUM_PANEL = 2
-Panels = [ROTATE_180_FLIPPEDY, ROTATE_180_FLIPPEDX]
-USE_TCPIP = 1
-#Needed if using TCPIP comm
-TCP_IP = "192.168.99.187"
-TCP_PORT = 5333
-#Needed if using Serial comm
-SERIAL_PORT = 'COM4'
-########## USER DEFS ########## USER DEFS ########### USER DEFS ##### USER DEFS ###############
 
 dico = { # 4x6 matrix sprite dictionnary
  'A': 'AEAA40', 'B': 'CACAC0', 'C': '688860', 'D': 'CAAAC0', 'E': 'E8C8E0', 'F': '88C8E0', 'G': '6B8860',
  'H': 'AAEAA0', 'I': '444440', 'J': 'CC4440', 'K': '9ACA90', 'L': 'E88880', 'M': 'AAAEA0', 'N': '99BD90', 
  'O': 'EAAAE0', 'P': '88EAE0', 'Q': '3EAAE0', 'R': 'AACAE0', 'S': 'C24860', 'T': '4444E0', 'U': 'EAAAA0', 
  'V': '4AAAA0', 'W': 'AEAAA0', 'X': 'AA4AA0', 'Y': '44AAA0', 'Z': 'E842E0', 
- '0': '4AAA40', '1': '444C40', '2': 'F42A40', '3': '', '4': '', 
- '5': '', '6': '', '7': '', '8': 'EA4AE0', '9': 'E2EAE0',
- ' ': '000000'
+ '0': '4AAA40', '1': '444C40', '2': 'F42A40', '3': 'C2C2C0', '4': '22EAA0', 
+ '5': 'C2C8E0', '6': '4AC860', '7': '8E22E0', '8': 'EA4AE0', '9': 'E2EAE0',
+ ' ': '000000', '.': '660000', ',': '866000', ';': '866066', '!': '606666', '?': '4042A4'
 }
-
 
 TPM2NET_HEADER_SIZE = 4
 TPM2NET_HEADER_SIMULATE = 0x74
@@ -75,12 +63,14 @@ TPM2NET_CMD_COMMAND = 0xc0
 TPM2NET_CMD_ANSWER = 0xaa
 TPM2NET_FOOTER_IDENT = 0x36
 
-if (USE_TCPIP):
+NUM_PANEL = len(config.Panels)
+
+if (config.USE_TCPIP):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((TCP_IP, TCP_PORT))
+	s.connect((config.TCP_IP, config.TCP_PORT))
 else:		
 	s = serial.Serial(
-		port=SERIAL_PORT,
+		port=config.SERIAL_PORT,
 		baudrate=115200,
 		parity=serial.PARITY_NONE,
 		stopbits=serial.STOPBITS_ONE,
@@ -113,7 +103,7 @@ def clear():
 	UpdatePanels()
 
 def sendFrame(buf):
-	if (USE_TCPIP):
+	if (config.USE_TCPIP):
 		s.send(buf)
 	else:
 		s.write(buf)
@@ -145,7 +135,7 @@ def transformPanel(panel, transform, vx=0, vy=0):
 	#   which is useful for scrolling in a big picture map, for example.
 	###############################################################
 
-	if (transform == NO_ROTATE):
+	if (transform == 'NO_ROTATE'):
 		#retourner lignes impaires
 		for x in range(0, 8, 2):
 			for y in range(8):
@@ -163,16 +153,16 @@ def transformPanel(panel, transform, vx=0, vy=0):
 					q[x + panel*8][y] = 0
 					
 	###############################################################
-	if (transform == ROTATE_90):
+	if (transform == 'ROTATE_90'):
 		pass
 	###############################################################			
-	if (transform == ROTATE_90_FLIPPEDY):
+	if (transform == 'ROTATE_90_FLIPPEDY'):
 		pass
 	###############################################################			
-	if (transform == ROTATE_180):
+	if (transform == 'ROTATE_180'):
 		pass
 	###############################################################	
-	if (transform == ROTATE_180_FLIPPEDY):
+	if (transform == 'ROTATE_180_FLIPPEDY'):
 		for x in range(0, 8, 2):
 			for y in range(8):
 				if is_pcoord_valid(vx+7-y+panel*8, vy+7-x):
@@ -188,7 +178,7 @@ def transformPanel(panel, transform, vx=0, vy=0):
 					q[x + panel*8][y] = 0
 					
 	###############################################################	
-	if (transform == ROTATE_180_FLIPPEDX):
+	if (transform == 'ROTATE_180_FLIPPEDX'):
 		#retourner lignes impaires et symetrie sur la diagonale
 		for x in range(0, 8, 2):
 			for y in range(8):
@@ -205,7 +195,7 @@ def transformPanel(panel, transform, vx=0, vy=0):
 					q[x + panel*8][y] = 0
 					
 	###############################################################			
-	if (transform == ROTATE_270):
+	if (transform == 'ROTATE_270'):
 		pass
 	###############################################################
 
@@ -235,8 +225,8 @@ def UpdatePanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 
 #Update of all panels
 def UpdatePanels(virtplan_offset_x=0, virtplan_offset_y=0):
-	for i in range(len(Panels)):
-		UpdatePanel(i,Panels[i], virtplan_offset_x, virtplan_offset_y)
+	for i in range(len(config.Panels)):
+		UpdatePanel(i,config.Panels[i], virtplan_offset_x, virtplan_offset_y)
 		sleep(0.006) #delay needed for the Teensy Arduino board to digest the received information
 	
 def ScrollPanelsLeft():
@@ -475,8 +465,11 @@ def DoAnimationVirtualPlan():
 def DoAnimationLoadImage():
 	#LoadImage("rainbow.png")
 	LoadImage("flower.jpg")
+	#LoadImage("rainbow.jpg")
 	doIt = 1000
-	posx = 0; posy = 0; incx = 1; incy = 1;
+	posx = 0; posy = 0; 
+	incx = 1; incy = 1;
+	#incx = random.randint(1,2); incy = random.randint(1,2);
 	while (doIt):
 		posx = posx + incx
 		posy = posy + incy
