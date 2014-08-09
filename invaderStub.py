@@ -443,6 +443,11 @@ def DoAnimationSprite(scroll):
 	sleep(0.1)
 
 def DoAnimationVirtualPlan():
+	global p
+	p = [[] for _ in range(8*NUM_PANEL*VIRTPLAN_MULT_SIZE)]
+	for x in range(8*NUM_PANEL*VIRTPLAN_MULT_SIZE):
+		for y in range(8*VIRTPLAN_MULT_SIZE):
+			p[x].append(0)
 	clear()
 	#Put some text in the virtualplan
 	Text(1,2,   "CETIC", random.randint(0,31),random.randint(0,31),random.randint(0,31) ,3)
