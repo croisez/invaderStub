@@ -30,18 +30,30 @@
 #  ScrollPanelsDown
 #  Circle(xc,yc,radius,r,g,b,[max_x],[max_y])
 #  Sprite(x,y,data,r,g,b)
+#  Text(x, y, buf, r, g, b, w=4): use Sprite() to display the buf string at (x,y) coordinates, using rgb color, each letter being spaced by w pixels
+#  LoadImage(name): load an image inside the virtualplan.
 #
 #  For the sprite, a dictionnary has been initiated, containing a big part of the alphabet.
 
 
+import socket
+import serial
+from time import sleep
+import random
+import math
+from PIL import Image
+
+NO_ROTATE = 0; ROTATE_90 = 1; ROTATE_90_FLIPPEDY = 2; ROTATE_180 = 3; ROTATE_180_FLIPPEDY = 4; ROTATE_180_FLIPPEDX = 5; ROTATE_270 = 6
+
 ########## USER DEFS ########## USER DEFS ########### USER DEFS ##### USER DEFS ###############
-NUM_PANEL = 2
-USE_TCPIP = 1
+NUM_PANEL = 3
+Panels=[NO_ROTATE, NO_ROTATE, NO_ROTATE]
+USE_TCPIP = 0
 #Needed if using TCPIP comm
 TCP_IP = "192.168.99.187"
 TCP_PORT = 5333
 #Needed if using Serial comm
-SERIAL_PORT = 'COM45'
+SERIAL_PORT = 'COM4'
 ########## USER DEFS ########## USER DEFS ########### USER DEFS ##### USER DEFS ###############
 
 dico = { # 4x6 matrix sprite dictionnary
@@ -54,11 +66,6 @@ dico = { # 4x6 matrix sprite dictionnary
  ' ': '000000'
 }
 
-import socket
-import serial
-from time import sleep
-import random
-import math
 
 TPM2NET_HEADER_SIZE = 4
 TPM2NET_HEADER_SIMULATE = 0x74
@@ -67,15 +74,6 @@ TPM2NET_CMD_DATAFRAME = 0xda
 TPM2NET_CMD_COMMAND = 0xc0
 TPM2NET_CMD_ANSWER = 0xaa
 TPM2NET_FOOTER_IDENT = 0x36
-
-NO_ROTATE = 0
-ROTATE_90 = 1
-ROTATE_90_FLIPPEDY = 2
-ROTATE_180 = 3
-ROTATE_180_FLIPPEDY = 4
-ROTATE_180_FLIPPEDX = 5
-ROTATE_270 = 6
-	
 
 if (USE_TCPIP):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -237,10 +235,9 @@ def UpdatePanel(panel, transform, virtplan_offset_x=0, virtplan_offset_y=0):
 
 #Update of all panels
 def UpdatePanels(virtplan_offset_x=0, virtplan_offset_y=0):
-	UpdatePanel(0,ROTATE_180_FLIPPEDY, virtplan_offset_x, virtplan_offset_y)
-	sleep(0.006) #delay needed for the Teensy Arduino board to digest the received information
-	UpdatePanel(1,ROTATE_180_FLIPPEDX, virtplan_offset_x, virtplan_offset_y)
-	sleep(0.006)
+	for i in range(len(Panels)):
+		UpdatePanel(i,Panels[i], virtplan_offset_x, virtplan_offset_y)
+		sleep(0.006) #delay needed for the Teensy Arduino board to digest the received information
 	
 def ScrollPanelsLeft():
 	for x in range(1, 8*NUM_PANEL):
@@ -302,7 +299,26 @@ def Text(x, y, buf, r, g, b, w=4):
 	for i in range(len(buf)):
 		Sprite(x0,y, dico[buf[i]], r, g, b)
 		x0 = x0 + w
+
+def map(x, in_min, in_max, out_min, out_max):
+	return math.floor((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
 		
+def LoadImage(name):
+	im = Image.open(name)
+	pix = im.load()
+
+	#redefine p to fit the image size and load pixels into virtualplan
+	global p
+	p = []
+	for x in range(im.size[0]):
+		p.append([])
+		for y in range(im.size[1]):
+			r = map(pix[x,im.size[1]-y-1][0], 0, 255, 0, 31)
+			g = map(pix[x,im.size[1]-y-1][1], 0, 255, 0, 31)
+			b = map(pix[x,im.size[1]-y-1][2], 0, 255, 0, 31)
+			c = convert24To15Bit(r,g,b)
+			p[x].append(c)
+
 def DoAnimationRandPanels():
 	r = random.randint(0,31)
 	g = random.randint(0,31)
@@ -451,10 +467,32 @@ def DoAnimationVirtualPlan():
 		UpdatePanels(posx, posy); sleep(0.2)
 		doIt = doIt - 1
 
+def DoAnimationLoadImage():
+	#LoadImage("rainbow.png")
+	LoadImage("flower.jpg")
+	doIt = 1000
+	posx = 0; posy = 0; incx = 1; incy = 1;
+	while (doIt):
+		posx = posx + incx
+		posy = posy + incy
+		
+		if posx < 0 or posx > width(p) - 8*NUM_PANEL:
+			incx = -incx
+			posx = posx + incx
+			
+		if posy < 0 or posy > height(p) - 8:
+			incy = -incy
+			poxy = posy + incy
+			
+		UpdatePanels(posx, posy); sleep(0)
+		doIt = doIt - 1
 	
 def DoAnimationAll():
 	LengthOfEachDemo = 30
 	while True:
+		for i in range(LengthOfEachDemo):
+			clear()
+			DoAnimationLoadImage()
 		for i in range(LengthOfEachDemo):
 			clear()
 			DoAnimationVirtualPlan()
