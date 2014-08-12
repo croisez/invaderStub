@@ -459,14 +459,15 @@ def DoAnimationVirtualPlan():
 			incy = -incy
 			poxy = posy + incy
 			
-		UpdatePanels(posx, posy); sleep(0.2)
+		UpdatePanels(posx, posy); sleep(0.3)
 		doIt = doIt - 1
 
 def DoAnimationLoadImage():
 	#LoadImage("rainbow.png")
-	LoadImage("flower.jpg")
+	#LoadImage("flower.jpg")
 	#LoadImage("rainbow.jpg")
-	doIt = 1000
+	LoadImage("cetic_logo.png")
+	doIt = 5000
 	posx = 0; posy = 0; 
 	incx = 1; incy = 1;
 	#incx = random.randint(1,2); incy = random.randint(1,2);
@@ -482,7 +483,7 @@ def DoAnimationLoadImage():
 			incy = -incy
 			poxy = posy + incy
 			
-		UpdatePanels(posx, posy); sleep(0)
+		UpdatePanels(posx, posy); sleep(0.05)
 		doIt = doIt - 1
 	
 def DoAnimationAll():
