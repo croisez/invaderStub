@@ -41,7 +41,7 @@ import serial
 from time import sleep
 import random
 import math
-from PIL import Image
+from PIL import Image      # https://www.pkimber.net/howto/python/modules/pillow.html
 import config
 
 
