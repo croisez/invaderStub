@@ -44,6 +44,7 @@ import math
 from PIL import Image      # https://www.pkimber.net/howto/python/modules/pillow.html
 import config
 
+BRIGHTNESS = config.BRIGHTNESS;
 
 dico = { # 4x6 matrix sprite dictionnary
  'A': 'AEAA40', 'B': 'CACAC0', 'C': '688860', 'D': 'CAAAC0', 'E': 'E8C8E0', 'F': '88C8E0', 'G': '6B8860',
@@ -114,7 +115,9 @@ def convert24To15Bit(r,g,b):
 	# BBBBBBBB BBBBBBBB
 	# 11111111 22222222
 	# -bbbbbgg gggrrrrr
-	
+	b = int(b * BRIGHTNESS / 100)
+	g = int(g * BRIGHTNESS / 100)
+	r = int(r * BRIGHTNESS / 100)
 	B1=(b<<2) + ((g&~0b111)>>3)
 	B2=((g&~0b11000)<<5) + r
 	return B1*256 + B2
