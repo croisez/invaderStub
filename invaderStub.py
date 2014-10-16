@@ -257,8 +257,8 @@ def Circle(xc,yc,radius, r, g, b, max_x=8*NUM_PANEL, max_y=8):
 	k = 0
 	while (k <= 2*math.pi):
 		k = k + .1
-		x = math.floor(math.sin(k) * radius + xc)
-		y = math.floor(math.cos(k) * radius + yc)
+		x = int(math.floor(math.sin(k) * radius + xc))
+		y = int(math.floor(math.cos(k) * radius + yc))
 		if x >= 0 and x < max_x and y >= 0 and y < max_y:
 			p[x][y] = convert24To15Bit(r,g,b)
 
@@ -463,10 +463,10 @@ def DoAnimationVirtualPlan():
 		doIt = doIt - 1
 
 def DoAnimationLoadImage():
-	#LoadImage("rainbow.png")
+	LoadImage("rainbow.png")
 	#LoadImage("flower.jpg")
 	#LoadImage("rainbow.jpg")
-	LoadImage("cetic_logo.png")
+	#LoadImage("cetic_logo.png")
 	doIt = 5000
 	posx = 0; posy = 0; 
 	incx = 1; incy = 1;
